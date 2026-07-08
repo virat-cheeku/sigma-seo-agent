@@ -25,6 +25,7 @@ jobs:
         run: pip install requests
 
       - name: Run on-page autopilot (Mon/Thu only)
+        id: onpage
         if: github.event.schedule == '0 9 * * 1,4' || github.event_name == 'workflow_dispatch'
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -35,17 +36,18 @@ jobs:
           PUBLISH_STATUS: draft
         run: |
           python agent_publish.py 2>&1 | tee onpage_run.log
-          exit ${PIPESTATUS[0]}
+          echo "exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
         shell: bash
         continue-on-error: true
 
       - name: Run off-page autopilot (daily)
+        id: offpage
         if: github.event.schedule == '0 10 * * *' || github.event_name == 'workflow_dispatch'
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           python agent_offpage.py 2>&1 | tee offpage_run.log
-          exit ${PIPESTATUS[0]}
+          echo "exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
         shell: bash
         continue-on-error: true
 
@@ -54,13 +56,13 @@ jobs:
         run: |
           echo "## Sigma SEO Agent — Run Output" >> $GITHUB_STEP_SUMMARY
           if [ -f onpage_run.log ]; then
-            echo "### On-page autopilot" >> $GITHUB_STEP_SUMMARY
+            echo "### On-page autopilot (exit code: ${{ steps.onpage.outputs.exit_code }})" >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
             cat onpage_run.log >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
           fi
           if [ -f offpage_run.log ]; then
-            echo "### Off-page autopilot" >> $GITHUB_STEP_SUMMARY
+            echo "### Off-page autopilot (exit code: ${{ steps.offpage.outputs.exit_code }})" >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
             cat offpage_run.log >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
@@ -69,8 +71,16 @@ jobs:
       - name: Fail job if either script failed
         if: always()
         run: |
-          if [ -f onpage_run.log ] && grep -q "^ERROR:" onpage_run.log; then exit 1; fi
-          if [ -f offpage_run.log ] && grep -q "^ERROR:" offpage_run.log; then exit 1; fi
+          onpage_exit="${{ steps.onpage.outputs.exit_code }}"
+          offpage_exit="${{ steps.offpage.outputs.exit_code }}"
+          echo "on-page exit code: ${onpage_exit:-not run}"
+          echo "off-page exit code: ${offpage_exit:-not run}"
+          if [ -n "$onpage_exit" ] && [ "$onpage_exit" != "0" ]; then
+            echo "On-page script failed."; exit 1
+          fi
+          if [ -n "$offpage_exit" ] && [ "$offpage_exit" != "0" ]; then
+            echo "Off-page script failed."; exit 1
+          fi
           exit 0
 
       - name: Commit updated tracking files
