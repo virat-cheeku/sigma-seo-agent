@@ -1,0 +1,49 @@
+{
+  "calculators": [
+    {
+      "name": "Age Calculator",
+      "slug": "age-calculator",
+      "primary_keyword": "age calculator",
+      "wp_id": null,
+      "wp_link": "https://sigmacalculator.net/age-calculator/",
+      "status": "already-live",
+      "created": "manual-entry"
+    },
+    {
+      "name": "GPA Calculator",
+      "slug": "gpa-calculator",
+      "primary_keyword": "gpa calculator",
+      "wp_id": null,
+      "wp_link": "https://sigmacalculator.net/gpa-calculator/",
+      "status": "already-live",
+      "created": "manual-entry"
+    },
+    {
+      "name": "CD Calculator",
+      "slug": "cd-calculator",
+      "primary_keyword": "cd calculator",
+      "wp_id": null,
+      "wp_link": "https://sigmacalculator.net/cd-calculator/",
+      "status": "already-live",
+      "created": "manual-entry"
+    },
+    {
+      "name": "Proportion Calculator",
+      "slug": "proportion-calculator",
+      "primary_keyword": "proportion calculator",
+      "wp_id": null,
+      "wp_link": "https://sigmacalculator.net/proportion-calculator/",
+      "status": "already-live",
+      "created": "manual-entry"
+    },
+    {
+      "name": "Calorie Calculator",
+      "slug": "calorie-calculator",
+      "primary_keyword": "calorie calculator",
+      "wp_id": null,
+      "wp_link": "https://sigmacalculator.net/calorie-calculator/",
+      "status": "already-live",
+      "created": "manual-entry"
+    }
+  ]
+}

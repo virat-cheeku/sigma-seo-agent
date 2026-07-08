@@ -1,0 +1,50 @@
+name: Sigma SEO Agent
+
+on:
+  schedule:
+    # On-page: every Monday & Thursday at 09:00 UTC (~14:00 PKT)
+    - cron: "0 9 * * 1,4"
+    # Off-page: every day at 10:00 UTC (~15:00 PKT)
+    - cron: "0 10 * * *"
+  workflow_dispatch: {}   # lets you trigger a run manually from the Actions tab
+
+permissions:
+  contents: write
+
+jobs:
+  run-agent:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run on-page autopilot (Mon/Thu only)
+        if: github.event.schedule == '0 9 * * 1,4' || github.event_name == 'workflow_dispatch'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          WP_URL: ${{ secrets.WP_URL }}
+          WP_USER: ${{ secrets.WP_USER }}
+          WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
+          WP_POST_TYPE: ${{ secrets.WP_POST_TYPE }}
+          PUBLISH_STATUS: draft
+        run: python agent_publish.py
+
+      - name: Run off-page autopilot (daily)
+        if: github.event.schedule == '0 10 * * *' || github.event_name == 'workflow_dispatch'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python agent_offpage.py
+
+      - name: Commit updated tracking files
+        run: |
+          git config user.name "sigma-seo-agent"
+          git config user.email "actions@users.noreply.github.com"
+          git add built_calculators.json offpage_rotation.json outreach_drafts/ || true
+          git diff --cached --quiet || git commit -m "Agent run: $(date -u +'%Y-%m-%d %H:%M UTC')"
+          git push
