@@ -89,6 +89,20 @@ you've reviewed a few weeks of drafts and are happy with quality.
 - The agent never repeats a calculator already in `built_calculators.json`
 - Every run is logged in the Actions tab — full visibility into what it did and why
 
+## AdSense readiness — one-time essential pages
+
+Before applying for Google AdSense, add one more secret:
+- `CONTACT_EMAIL` — the email you want listed publicly for site inquiries
+
+Then: repo → **Actions** tab → **"Setup Essential Pages (Privacy/About/Contact)"** →
+**Run workflow**. This generates and publishes (as drafts) a Privacy Policy, About Us,
+and Contact Us page — the pages AdSense checks for before approval. This only needs
+to run **once** (it's not on the daily/weekly schedule).
+
+**Review before publishing, especially the Privacy Policy** — it's a solid starting
+draft (covers AdSense/cookies disclosure, data handling, contact info) but isn't legal
+advice, and a few placeholders in `[BRACKETS]` need your specifics filled in.
+
 ## Next upgrades available on request
 - Wire real sending via Gmail API (one-time Google Cloud OAuth setup)
 - Add Ahrefs/SEMrush/DataForSEO calls for real backlink gap + competitor data

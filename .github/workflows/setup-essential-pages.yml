@@ -1,0 +1,39 @@
+name: Setup Essential Pages (Privacy/About/Contact)
+
+on:
+  workflow_dispatch: {}   # manual only — this is a one-time setup, not scheduled
+
+permissions:
+  contents: read
+
+jobs:
+  setup-pages:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install requests
+      - name: Generate and publish essential pages
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          WP_URL: ${{ secrets.WP_URL }}
+          WP_USER: ${{ secrets.WP_USER }}
+          WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
+          WP_POST_TYPE: ${{ secrets.WP_POST_TYPE }}
+          SITE_NAME: "Sigma Calculator"
+          CONTACT_EMAIL: ${{ secrets.CONTACT_EMAIL }}
+        run: |
+          python setup_essential_pages.py 2>&1 | tee setup_run.log
+          echo "exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+        shell: bash
+        id: setup
+      - name: Show results in run summary
+        if: always()
+        run: |
+          echo "## Essential Pages Setup — Run Output" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat setup_run.log >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
