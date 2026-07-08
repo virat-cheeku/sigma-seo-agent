@@ -33,13 +33,45 @@ jobs:
           WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
           WP_POST_TYPE: ${{ secrets.WP_POST_TYPE }}
           PUBLISH_STATUS: draft
-        run: python agent_publish.py
+        run: |
+          python agent_publish.py 2>&1 | tee onpage_run.log
+          exit ${PIPESTATUS[0]}
+        shell: bash
+        continue-on-error: true
 
       - name: Run off-page autopilot (daily)
         if: github.event.schedule == '0 10 * * *' || github.event_name == 'workflow_dispatch'
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: python agent_offpage.py
+        run: |
+          python agent_offpage.py 2>&1 | tee offpage_run.log
+          exit ${PIPESTATUS[0]}
+        shell: bash
+        continue-on-error: true
+
+      - name: Show results in run summary
+        if: always()
+        run: |
+          echo "## Sigma SEO Agent — Run Output" >> $GITHUB_STEP_SUMMARY
+          if [ -f onpage_run.log ]; then
+            echo "### On-page autopilot" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat onpage_run.log >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ -f offpage_run.log ]; then
+            echo "### Off-page autopilot" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat offpage_run.log >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Fail job if either script failed
+        if: always()
+        run: |
+          if [ -f onpage_run.log ] && grep -q "^ERROR:" onpage_run.log; then exit 1; fi
+          if [ -f offpage_run.log ] && grep -q "^ERROR:" offpage_run.log; then exit 1; fi
+          exit 0
 
       - name: Commit updated tracking files
         run: |

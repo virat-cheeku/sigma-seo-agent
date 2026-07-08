@@ -29,13 +29,22 @@ import re
 import requests
 from datetime import datetime, timezone
 
-ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
-WP_URL = os.environ["WP_URL"].rstrip("/")
-WP_USER = os.environ["WP_USER"]
-WP_APP_PASSWORD = os.environ["WP_APP_PASSWORD"]
-WP_POST_TYPE = os.environ.get("WP_POST_TYPE", "pages")
-PUBLISH_STATUS = os.environ.get("PUBLISH_STATUS", "draft")
-MODEL = os.environ.get("CLAUDE_MODEL", "claude-sonnet-5")
+def require_env(name):
+    val = os.environ.get(name, "").strip()
+    if not val:
+        print(f"MISSING SECRET: '{name}' is not set (or empty). "
+              f"Add it in GitHub: Settings -> Secrets and variables -> Actions -> New repository secret.",
+              file=sys.stderr)
+        sys.exit(1)
+    return val
+
+ANTHROPIC_API_KEY = require_env("ANTHROPIC_API_KEY")
+WP_URL = require_env("WP_URL").rstrip("/")
+WP_USER = require_env("WP_USER")
+WP_APP_PASSWORD = require_env("WP_APP_PASSWORD")
+WP_POST_TYPE = os.environ.get("WP_POST_TYPE", "pages").strip() or "pages"
+PUBLISH_STATUS = os.environ.get("PUBLISH_STATUS", "draft").strip() or "draft"
+MODEL = os.environ.get("CLAUDE_MODEL", "claude-sonnet-5").strip() or "claude-sonnet-5"
 
 TRACKING_FILE = os.path.join(os.path.dirname(__file__), "built_calculators.json")
 
@@ -83,7 +92,8 @@ def call_claude(system, user, max_tokens=1500, tools=None):
         json=payload,
         timeout=120,
     )
-    resp.raise_for_status()
+    if resp.status_code != 200:
+        raise RuntimeError(f"Claude API error [{resp.status_code}]: {resp.text[:800]}")
     data = resp.json()
     text_blocks = [b["text"] for b in data.get("content", []) if b.get("type") == "text"]
     return "\n".join(text_blocks).strip()
@@ -213,5 +223,7 @@ if __name__ == "__main__":
     try:
         main()
     except Exception as e:
+        import traceback
         print(f"ERROR: {e}", file=sys.stderr)
+        traceback.print_exc()
         sys.exit(1)
